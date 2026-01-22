@@ -4,21 +4,20 @@ import pandas as pd
 from supabase import create_client, Client
 from datetime import datetime
 
-# --- CONFIGURAZIONI INTEGRATE ---
+# --- CONFIGURAZIONI DEFINITIVE ---
 API_KEY = "281356f321msh431959f6e56b55cp1239b4jsn47bbee8cbdbc"
 HOST = "api-football-v1.p.rapidapi.com"
 HEADERS = {"x-rapidapi-host": HOST, "x-rapidapi-key": API_KEY}
 
-# DATI SUPABASE (URL e KEY)
+# DATI SUPABASE (URL e KEY ANON PUBLIC)
 SUPABASE_URL = "https://vipjocvnxdjoifkdaetz.supabase.co"
-# NOTA: Se ricevi "Invalid API Key", sostituisci questa password con la chiave 'anon public' di Supabase
-SUPABASE_KEY = "oV2I8utdWe0efLrM" 
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpcGpvY3ZueGRqb2lma2RhZXR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMTY4MjksImV4cCI6MjA4NDY5MjgyOX0.n7EZCKiJOEZUHgwhJsCAt6Rh7hrkx3dQVl8SvwPwQbE" 
 
 # Inizializzazione Database
 try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except:
-    st.error("Errore di connessione a Supabase. Controlla le chiavi API.")
+    st.error("Errore di configurazione Database.")
 
 # --- FUNZIONI DATI CALCIO ---
 def get_fixtures():
@@ -42,7 +41,6 @@ def get_ai_prediction(fixture_id):
 # --- INTERFACCIA UTENTE ---
 st.set_page_config(page_title="AI Bet Master", layout="wide", page_icon="⚽")
 
-# Stile CSS per Mobile
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; color: white; }
@@ -54,11 +52,9 @@ st.markdown("""
 if 'auth' not in st.session_state:
     st.session_state['auth'] = False
 
-# --- GESTIONE LOGIN / REGISTRAZIONE ---
+# --- LOGIN / REGISTRAZIONE ---
 if not st.session_state['auth']:
     st.title("🤖 AI Bet Master")
-    st.write("Accedi per vedere le schedine create dall'IA")
-    
     tab_auth = st.tabs(["Accedi", "Registrati"])
     
     with tab_auth[0]:
@@ -66,7 +62,7 @@ if not st.session_state['auth']:
         pass_l = st.text_input("Password", type="password", key="login_pass")
         if st.button("ACCEDI"):
             try:
-                user = supabase.auth.sign_in_with_password({"email": email_l, "password": pass_l})
+                supabase.auth.sign_in_with_password({"email": email_l, "password": pass_l})
                 st.session_state['auth'] = True
                 st.rerun()
             except:
@@ -80,7 +76,7 @@ if not st.session_state['auth']:
             if codice == "BETA2026":
                 try:
                     supabase.auth.sign_up({"email": email_r, "password": pass_r})
-                    st.success("Registrazione completata! Ora puoi fare il login.")
+                    st.success("Registrazione completata! Adesso puoi fare il login.")
                 except Exception as e:
                     st.error(f"Errore: {e}")
             else:
@@ -108,7 +104,7 @@ else:
                         <h3>{p['teams']['home']['name']} vs {p['teams']['away']['name']}</h3>
                         <p>Inizio: {p['fixture']['date'][11:16]}</p>
                     </div>""", unsafe_allow_html=True)
-                    if st.button(f"Analisi AI: {p['teams']['home']['name']}", key=p['fixture']['id']):
+                    if st.button(f"Analizza AI: {p['teams']['home']['name']}", key=p['fixture']['id']):
                         d = get_ai_prediction(p['fixture']['id'])
                         if d:
                             st.write(f"💡 **Consiglio:** {d['predictions']['advice']}")
@@ -122,7 +118,7 @@ else:
         if st.button("GENERA ORA"):
             partite = get_fixtures()
             schedina = []
-            with st.spinner("L'IA sta cercando le partite migliori..."):
+            with st.spinner("Analisi in corso..."):
                 for p in partite[:20]:
                     if len(schedina) >= n_eventi: break
                     d = get_ai_prediction(p['fixture']['id'])
@@ -133,16 +129,15 @@ else:
             if schedina:
                 st.table(pd.DataFrame(schedina))
             else:
-                st.warning("Nessun match trovato con questi parametri oggi.")
+                st.warning("Nessun match trovato.")
 
     elif scelta == "💬 AI Prompt":
         st.header("💬 Consulenza Privata AI")
-        domanda = st.text_input("Fai una domanda (es: 'Qual è il miglior match per Over 1.5 oggi?')")
+        domanda = st.text_input("Fai una domanda all'algoritmo:")
         if st.button("Analizza"):
-            st.info("Analisi in corso... L'IA suggerisce di guardare i match di Premier League per statistiche gol più alte.")
+            st.info("L'AI suggerisce di puntare sui match con vantaggio casa superiore al 75%.")
 
     elif scelta == "💰 Gestione Budget":
-        st.header("💰 Calcolatore Gestione Rischio")
-        cassa = st.number_input("Tua Cassa Totale (€)", value=100.0)
-        st.metric("Puntata Consigliata (Stake)", f"€{cassa * 0.05:.2f}")
-        st.write("L'IA consiglia di non superare il 5% del budget per ogni giocata.")
+        st.header("💰 Gestione Rischio")
+        cassa = st.number_input("Cassa Totale (€)", value=100.0)
+        st.metric("Stake Consigliato", f"€{cassa * 0.05:.2f}")
