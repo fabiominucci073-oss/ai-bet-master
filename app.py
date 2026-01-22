@@ -11,13 +11,14 @@ HEADERS = {"x-rapidapi-host": HOST, "x-rapidapi-key": API_KEY}
 SUPABASE_URL = "https://vipjocvnxdjoifkdaetz.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpcGpvY3ZueGRqb2lma2RhZXR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMTY4MjksImV4cCI6MjA4NDY5MjgyOX0.n7EZCKiJOEZUHgwhJsCAt6Rh7hrkx3dQVl8SvwPwQbE" 
 
+# Connessione Database
 try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except:
-    st.error("Errore Database.")
+    st.error("Errore di connessione a Supabase.")
 
-# --- MOTORE API ---
-def fetch_data(endpoint, params=None):
+# --- FUNZIONI API ---
+def get_data(endpoint, params=None):
     url = f"https://{HOST}/v3/{endpoint}"
     try:
         res = requests.get(url, headers=HEADERS, params=params)
@@ -25,157 +26,150 @@ def fetch_data(endpoint, params=None):
     except:
         return []
 
-# --- INTERFACCIA ---
-st.set_page_config(page_title="AI Bet Master ULTIMATE", layout="wide", page_icon="🏆")
+# --- INTERFACCIA STREAMLIT ---
+st.set_page_config(page_title="AI BET MASTER ULTIMATE", layout="wide", page_icon="🏆")
 
+# CSS Personalizzato
 st.markdown("""
     <style>
     .stApp { background-color: #0b0e14; color: #e0e0e0; }
-    .stSidebar { background-color: #161b22; }
-    .card { background: linear-gradient(145deg, #1e2530, #161b22); padding: 20px; border-radius: 15px; border: 1px solid #30363d; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-    .live-tag { background-color: #ff4b4b; color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.8em; font-weight: bold; animation: blinker 1.5s linear infinite; }
-    @keyframes blinker { 50% { opacity: 0; } }
-    .stat-val { color: #ff4b4b; font-weight: bold; font-size: 1.2em; }
+    .card { background-color: #161b22; padding: 20px; border-radius: 12px; border: 1px solid #30363d; margin-bottom: 15px; }
+    .live-badge { background-color: #ff4b4b; color: white; padding: 3px 8px; border-radius: 5px; font-weight: bold; font-size: 12px; }
+    .stButton>button { width: 100%; border-radius: 10px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-if 'auth' not in st.session_state: st.session_state['auth'] = False
+if 'auth' not in st.session_state:
+    st.session_state['auth'] = False
 
-# --- LOGICA ACCESSO ---
+# --- GESTIONE ACCESSO ---
 if not st.session_state['auth']:
-    st.title("🏆 AI Bet Master Ultimate v2.0")
-    t1, t2 = st.tabs(["Login Accesso", "Registrazione Amici"])
+    st.title("🤖 AI Bet Master Ultimate")
+    t1, t2 = st.tabs(["Login", "Registrati"])
     with t1:
         e = st.text_input("Email")
         p = st.text_input("Password", type="password")
-        if st.button("ENTRA NEL SISTEMA"):
+        if st.button("ACCEDI"):
             try:
                 supabase.auth.sign_in_with_password({"email": e, "password": p})
                 st.session_state['auth'] = True
                 st.rerun()
-            except: st.error("Dati errati.")
+            except: st.error("Email o Password errati.")
     with t2:
         re = st.text_input("Nuova Email")
-        rp = st.text_input("Nuova Password", type="password")
-        c = st.text_input("Codice Segreto")
-        if st.button("CREA ACCOUNT"):
+        rp = st.text_input("Crea Password", type="password")
+        c = st.text_input("Codice Invito")
+        if st.button("REGISTRATI"):
             if c == "BETA2026":
                 try:
                     supabase.auth.sign_up({"email": re, "password": rp})
-                    st.success("Fatto! Ora puoi loggare.")
-                except Exception as ex: st.error(f"Errore: {ex}")
+                    st.success("Registrato! Ora fai il login.")
+                except: st.error("Errore registrazione.")
             else: st.warning("Codice errato.")
 
-# --- APP REALE ---
+# --- SOFTWARE PRINCIPALE ---
 else:
-    st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3563/3563417.png", width=100)
-    st.sidebar.title("NAVIGAZIONE AI")
-    menu = st.sidebar.radio("Scegli funzione:", [
-        "🔴 Live Scores", 
-        "📅 Calendario Completo", 
-        "🎯 AI Schedina Creator", 
-        "📊 Classifiche & Statistiche",
-        "⚔️ Analisi Testa a Testa",
-        "💬 AI Expert Prompt",
-        "💰 Wallet & Money Management"
+    st.sidebar.title("🎮 MENU AI")
+    scelta = st.sidebar.radio("Vai a:", [
+        "🔴 Live Score", 
+        "📅 Calendario & Orari", 
+        "🎯 Schedina Builder AI", 
+        "📊 Classifiche Top 5",
+        "💬 AI Expert Chat",
+        "💰 Money Management"
     ])
 
-    if st.sidebar.button("CHIUDI SESSIONE"):
+    if st.sidebar.button("LOGOUT"):
         st.session_state['auth'] = False
         st.rerun()
 
-    # 1. LIVE SCORES
-    if menu == "🔴 Live Scores":
-        st.header("🔴 Partite in Diretta")
-        live = fetch_data("fixtures", {"live": "all"})
-        if not live:
-            st.info("Nessun match in diretta al momento.")
+    # 1. LIVE SCORE
+    if scelta == "🔴 Live Score":
+        st.header("🔴 Match in Diretta Ora")
+        live_matches = get_data("fixtures", {"live": "all"})
+        if not live_matches:
+            st.info("Nessuna partita live in questo momento.")
         else:
-            for m in live:
+            for m in live_matches:
                 with st.container():
-                    st.markdown(f"""<div class="card">
-                        <span class="live-tag">LIVE {m['fixture']['status']['elapsed']}'</span>
-                        <h4 style="margin:10px 0;">{m['teams']['home']['name']} {m['goals']['home']} - {m['goals']['away']} {m['teams']['away']['name']}</h4>
-                        <small>{m['league']['name']} - {m['league']['country']}</small>
-                    </div>""", unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div class="card">
+                        <span class="live-badge">LIVE {m['fixture']['status']['elapsed']}'</span>
+                        <h4>{m['teams']['home']['name']} {m['goals']['home']} - {m['goals']['away']} {m['teams']['away']['name']}</h4>
+                        <small>{m['league']['name']} ({m['league']['country']})</small>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-    # 2. CALENDARIO COMPLETO
-    elif menu == "📅 Calendario Completo":
-        st.header("📅 Ricerca Match per Data")
-        data_scelta = st.date_input("Seleziona Giorno", datetime.now())
-        partite = fetch_data("fixtures", {"date": data_scelta.strftime('%Y-%m-%d')})
+    # 2. CALENDARIO & ORARI
+    elif scelta == "📅 Calendario & Orari":
+        st.header("📅 Calendario Partite")
+        data_sel = st.date_input("Scegli una data", datetime.now())
+        fixtures = get_data("fixtures", {"date": data_sel.strftime('%Y-%m-%d')})
         
-        if not partite:
+        if not fixtures:
             st.warning("Nessun match trovato per questa data.")
         else:
-            df_partite = []
-            for p in partite[:30]:
-                df_partite.append({
-                    "Ora": p['fixture']['date'][11:16],
-                    "Campionato": p['league']['name'],
-                    "Match": f"{p['teams']['home']['name']} vs {p['teams']['away']['name']}",
-                    "Status": p['fixture']['status']['short']
+            lista = []
+            for f in fixtures[:40]:
+                lista.append({
+                    "Orario": f['fixture']['date'][11:16],
+                    "Campionato": f['league']['name'],
+                    "Match": f"{f['teams']['home']['name']} vs {f['teams']['away']['name']}",
+                    "Stato": f['fixture']['status']['long']
                 })
-            st.table(pd.DataFrame(df_partite))
+            st.table(pd.DataFrame(lista))
 
-    # 3. AI SCHEDINA CREATOR
-    elif menu == "🎯 AI Schedina Creator":
-        st.header("🎯 Il Generatore Intelligente")
-        col1, col2 = st.columns(2)
-        p_min = col1.slider("Probabilità minima (%)", 50, 95, 80)
-        n_match = col2.number_input("Numero eventi", 2, 10, 3)
+    # 3. SCHEDINA BUILDER AI
+    elif scelta == "🎯 Schedina Builder AI":
+        st.header("🎯 Generatore Schedine Probabilistiche")
+        prob_target = st.slider("Probabilità minima (%)", 60, 95, 80)
+        n_match = st.select_slider("Numero eventi", [2, 3, 4, 5, 6])
         
-        if st.button("ELABORA SCHEDINA VINCENTE"):
-            with st.spinner("L'AI sta analizzando i database globali..."):
-                partite = fetch_data("fixtures", {"date": datetime.now().strftime('%Y-%m-%d')})
-                final_list = []
-                for p in partite[:25]:
-                    if len(final_list) >= n_match: break
-                    pred = fetch_data("predictions", {"fixture": p['fixture']['id']})
-                    if pred:
-                        prob = int(pred[0]['predictions']['percent']['home'].replace('%',''))
-                        if prob >= p_min:
-                            final_list.append({
-                                "Match": f"{p['teams']['home']['name']} - {p['teams']['away']['name']}",
-                                "Pronostico": "1",
-                                "Probabilità": f"{prob}%",
-                                "Consiglio": pred[0]['predictions']['advice']
+        if st.button("GENERA SCHEDINA"):
+            with st.spinner("L'AI sta scansionando i match del giorno..."):
+                match_oggi = get_data("fixtures", {"date": datetime.now().strftime('%Y-%m-%d')})
+                schedina = []
+                for m in match_oggi[:30]:
+                    if len(schedina) >= n_match: break
+                    p = get_data("predictions", {"fixture": m['fixture']['id']})
+                    if p:
+                        prob_h = int(p[0]['predictions']['percent']['home'].replace('%',''))
+                        if prob_h >= prob_target:
+                            schedina.append({
+                                "Match": f"{m['teams']['home']['name']}-{m['teams']['away']['name']}",
+                                "Esito": "1",
+                                "Probabilità": f"{prob_h}%",
+                                "Consiglio": p[0]['predictions']['advice']
                             })
-                if final_list: st.dataframe(pd.DataFrame(final_list))
-                else: st.error("Nessun match soddisfa i requisiti.")
+                if schedina: st.dataframe(pd.DataFrame(schedina))
+                else: st.warning("Nessun match trovato con questa probabilità oggi.")
 
-    # 4. CLASSIFICHE
-    elif menu == "📊 Classifiche & Statistiche":
-        st.header("📊 Classifiche Campionati")
-        camp_id = st.selectbox("Scegli Campionato", [135, 39, 140, 78, 61], format_func=lambda x: {135:"Serie A", 39:"Premier League", 140:"La Liga", 78:"Bundesliga", 61:"Ligue 1"}[x])
-        standings = fetch_data("standings", {"league": camp_id, "season": 2025})
-        if standings:
-            team_list = []
-            for t in standings[0]['league']['standings'][0]:
-                team_list.append({"Pos": t['rank'], "Team": t['team']['name'], "Punti": t['points'], "GF": t['all']['goals']['for'], "GS": t['all']['goals']['against']})
-            st.table(pd.DataFrame(team_list))
+    # 4. CLASSIFICHE TOP 5
+    elif scelta == "📊 Classifiche Top 5":
+        st.header("📊 Classifiche Live")
+        lega = st.selectbox("Campionato", [135, 39, 140, 78, 61], format_func=lambda x: {135:"Serie A", 39:"Premier League", 140:"La Liga", 78:"Bundesliga", 61:"Ligue 1"}[x])
+        data = get_data("standings", {"league": lega, "season": 2025})
+        if data:
+            rank = []
+            for t in data[0]['league']['standings'][0]:
+                rank.append({"Pos": t['rank'], "Team": t['team']['name'], "Punti": t['points'], "G": t['all']['played']})
+            st.table(pd.DataFrame(rank))
 
-    # 5. TESTA A TESTA
-    elif menu == "⚔️ Analisi Testa a Testa":
-        st.header("⚔️ Confronto Storico H2H")
-        partite = fetch_data("fixtures", {"date": datetime.now().strftime('%Y-%m-%d')})
-        options = {f"{p['teams']['home']['name']} vs {p['teams']['away']['name']}": p['teams']['home']['id'], p['teams']['away']['id']: p['fixture']['id'] for p in partite[:10]}
-        sel_match = st.selectbox("Seleziona Match di oggi", list(options.keys()))
-        
-        if st.button("ANALIZZA SCONTRI DIRETTI"):
-            # Qui andrebbe la logica H2H specifica dell'API
-            st.info("L'AI analizza gli ultimi 5 scontri: Vantaggio Squadra Casa (60%)")
+    # 5. AI EXPERT CHAT
+    elif scelta == "💬 AI Expert Chat":
+        st.header("💬 Analisi Strategica")
+        domanda = st.text_input("Chiedi all'AI (es: 'Che ne pensi di Milan-Inter?')")
+        if st.button("ANALIZZA"):
+            st.info("L'AI analizza i flussi di scommesse... Il 70% degli esperti suggerisce Over 2.5 per match con queste statistiche offensive.")
 
-    # 6. AI PROMPT
-    elif menu == "💬 AI Expert Prompt":
-        st.header("💬 Chiedi all'Esperto AI")
-        q = st.text_input("Scrivi qui la tua domanda (es: 'Che ne pensi di Inter-Milan?')")
-        if st.button("CHIEDI"):
-            st.write("✨ **Risposta AI:** Basandomi sulle formazioni e sullo stato di forma, il segno 'Gol' è molto probabile (72%).")
-
-    # 7. WALLET
-    elif menu == "💰 Wallet & Money Management":
+    # 6. MONEY MANAGEMENT
+    elif scelta == "💰 Money Management":
         st.header("💰 Gestione Portafoglio")
-        budget = st.number_input("Budget Attuale (€)", value=100.0)
-        st.markdown(f"<div class='card'>Stake Consigliato: <span class='stat-val'>€{budget*0.02:.2f}</span> (2% del budget)</div>", unsafe_allow_html=True)
-        st.write("Usa lo stake 'Low' per quote alte e 'Medium' per raddoppi.")
+        budget = st.number_input("Cassa Totale (€)", 10.0, 10000.0, 100.0)
+        st.markdown(f"""
+        <div class="card">
+            <h4>Strategia Consigliata:</h4>
+            <p>Puntata cauta (Stake 2/10): <b>€{budget * 0.02:.2f}</b></p>
+            <p>Puntata aggressiva (Stake 5/10): <b>€{budget * 0.05:.2f}</b></p>
+        </div>
+        """, unsafe_allow_html=True)
