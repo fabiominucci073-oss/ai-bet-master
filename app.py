@@ -2,18 +2,23 @@ import streamlit as st
 import requests
 import pandas as pd
 import numpy as np
-# Modifica qui per compatibilità Windows/Python 3.14
-try:
-    from supabase import create_client, Client
-except ImportError:
-    from supabase_py import create_client
-    # Definiamo Client come alias se non esiste in supabase_py
-    Client = any 
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 import plotly.express as px
 import time
 import random
+
+# --- BLOCCO COMPATIBILITÀ SUPABASE (Indistruttibile) ---
+try:
+    from supabase import create_client, Client
+except ImportError:
+    try:
+        from supabase_py import create_client
+        Client = any
+    except ImportError:
+        st.error("⚠️ Libreria Supabase non rilevata correttamente. Prova a eseguire: pip install supabase-py")
+# -------------------------------------------------------
+
 # ==========================================
 # 1. CONFIGURAZIONI CORE & SECURITY
 # ==========================================
@@ -47,7 +52,6 @@ st.markdown("""
 
     .stApp { background-color: var(--bg-dark); color: #ffffff; font-family: 'Inter', sans-serif; }
     
-    /* Header Futuro */
     .main-header {
         background: linear-gradient(135deg, #1db954 0%, #05080a 100%);
         padding: 40px; border-radius: 20px; margin-bottom: 30px;
@@ -55,7 +59,6 @@ st.markdown("""
         box-shadow: 0 15px 35px rgba(0,0,0,0.6);
     }
     
-    /* Card Professionali */
     .card-pro {
         background: var(--card-bg); border: 1px solid #30363d;
         padding: 22px; border-radius: 15px; margin-bottom: 20px;
@@ -67,7 +70,6 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(29, 185, 84, 0.1);
     }
 
-    /* Indicatori Live */
     .status-live {
         color: #ff4b4b; font-weight: 700; font-size: 13px;
         text-transform: uppercase; letter-spacing: 1.5px;
@@ -75,13 +77,11 @@ st.markdown("""
     }
     @keyframes blink { 50% { opacity: 0.1; } }
 
-    /* Custom Metric */
     .metric-box {
         background: #161b22; padding: 15px; border-radius: 10px;
         text-align: center; border-top: 3px solid var(--accent);
     }
     
-    /* Sidebar */
     [data-testid="stSidebar"] { background-color: #05080a; border-right: 1px solid #30363d; }
     </style>
     """, unsafe_allow_html=True)
@@ -89,7 +89,7 @@ st.markdown("""
 # ==========================================
 # 3. LOGICA DI BACKEND & API
 # ==========================================
-@st.cache_data(ttl=300) # Cache di 5 minuti per risparmiare API
+@st.cache_data(ttl=300)
 def fetch_live_data():
     url = f"https://{HOST}/v3/fixtures"
     params = {"live": "all"}
@@ -99,7 +99,6 @@ def fetch_live_data():
     except: return []
 
 def calculate_monte_carlo(prob, odds, trials=1000):
-    # Simulazione di 1000 scenari per calcolare il rischio rovina
     results = []
     for _ in range(trials):
         win = 1 if random.random() < prob else 0
@@ -134,7 +133,7 @@ if not st.session_state['auth']:
                     st.session_state['auth'] = True
                     st.session_state['user_email'] = email
                     st.rerun()
-                except: st.error("Credenziali non valide.")
+                except: st.error("Credenziali non valide o database non raggiungibile.")
 
     with tab_sign:
         col_s, _ = st.columns([1, 1])
@@ -146,7 +145,7 @@ if not st.session_state['auth']:
                 if v_code == "BETA2026":
                     try:
                         supabase.auth.sign_up({"email": n_email, "password": n_pass})
-                        st.success("Account Creato! Conferma via email.")
+                        st.success("Account Creato! Controlla la mail per confermare.")
                     except Exception as e: st.error(f"Errore: {e}")
                 else: st.error("Codice Beta non valido.")
 
@@ -163,7 +162,6 @@ if not st.session_state['auth']:
 # 5. DASHBOARD OPERATIVA (AUTENTICATA)
 # ==========================================
 else:
-    # Sidebar Navigation
     with st.sidebar:
         st.markdown(f"<div style='text-align:center; padding:20px;'><h2 style='font-family:Orbitron; color:#1db954;'>MASTER AI</h2><p style='font-size:12px;'>Utente: {st.session_state['user_email']}</p></div>", unsafe_allow_html=True)
         menu = st.radio("MODULI ANALITICI", [
@@ -178,118 +176,65 @@ else:
             st.session_state['auth'] = False
             st.rerun()
 
-    # --- MODULO 1: PREMIUM SNAPSHOT ---
     if menu == "💎 Premium Snapshot":
         st.title("💎 Analisi High-Confidence")
-        st.markdown("Top picks generate dall'algoritmo basandosi sui volumi di mercato delle 11:00.")
-        
         c1, c2, c3 = st.columns(3)
         with c1: st.markdown("<div class='metric-box'>🎯 Accuratezza Oggi<br><b>84.2%</b></div>", unsafe_allow_html=True)
         with c2: st.markdown("<div class='metric-box'>📊 ROI Mensile<br><b>+12.4%</b></div>", unsafe_allow_html=True)
         with c3: st.markdown("<div class='metric-box'>🔥 Hot Streak<br><b>5 Win</b></div>", unsafe_allow_html=True)
         
         st.markdown("### 📋 Schedina Consigliata")
-        with st.container():
-            st.markdown("""
-                <div class='card-pro'>
-                    <div style='display:flex; justify-content:space-between;'>
-                        <b>PREMIER LEAGUE</b> <span style='color:#1db954;'>STAKE 5/10</span>
-                    </div>
-                    <h2 style='margin:15px 0;'>Liverpool - Chelsea</h2>
-                    <p>Suggerimento AI: <b style='color:#1db954;'>GOL (Entrambe segnano)</b> @ 1.65</p>
-                    <div style='font-size:12px; opacity:0.7;'>Analisi: Il Liverpool ha concesso gol in 4 delle ultime 5 partite in casa. Chelsea in forma offensiva smagliante.</div>
-                </div>
-            """, unsafe_allow_html=True)
+        st.markdown("""
+            <div class='card-pro'>
+                <b>PREMIER LEAGUE</b> - Liverpool vs Chelsea
+                <h2 style='color:#1db954;'>GOL @ 1.65</h2>
+                <p style='font-size:0.9rem; opacity:0.8;'>Analisi AI: Alta pressione offensiva registrata nelle ultime 3 gare di entrambe.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-    # --- MODULO 2: NEURAL LIVE SCANNER ---
     elif menu == "📡 Neural Live Scanner":
-        st.title("📡 Neural Live Scanner")
-        st.write("Monitoraggio flussi di pressione in tempo reale (API-V3).")
-        
+        st.title("📡 Live Neural Tracking")
         live_data = fetch_live_data()
         if not live_data:
-            st.warning("Nessun match live rilevante al momento. Riprova tra pochi minuti.")
+            st.warning("Nessun match live disponibile. Riprova tra poco.")
         else:
-            for match in live_data[:8]:
-                home = match['teams']['home']['name']
-                away = match['teams']['away']['name']
-                score = f"{match['goals']['home']} - {match['goals']['away']}"
-                time_el = match['fixture']['status']['elapsed']
-                
-                # Simulazione logica AI di pressione
-                pressure = random.randint(30, 95)
-                
-                with st.expander(f"🔴 {home} {score} {away} ({time_el}')"):
-                    col_a, col_b = st.columns([3, 1])
-                    with col_a:
-                        st.write(f"Campionato: {match['league']['name']}")
-                        st.progress(pressure/100)
-                        st.write(f"Indice Pressione Offensiva: {pressure}%")
-                    with col_b:
-                        if pressure > 80:
-                            st.error("⚡ POSSIBILE GOL")
-                        else:
-                            st.success("⚖️ STABILE")
+            for match in live_data[:5]:
+                pressure = random.randint(40, 98)
+                with st.container():
+                    st.markdown(f"""
+                        <div class='card-pro'>
+                            <b>{match['league']['name']}</b><br>
+                            {match['teams']['home']['name']} {match['goals']['home']} - {match['goals']['away']} {match['teams']['away']['name']}
+                        </div>
+                    """, unsafe_allow_html=True)
+                    st.progress(pressure/100)
 
-    # --- MODULO 3: PROFIT PLANNER ---
     elif menu == "📈 Profit Planner":
-        st.title("📈 Calcolo Interesse Composto")
-        col_p1, col_p2 = st.columns([1, 2])
+        st.title("📈 Proiezione Bankroll")
+        cap = st.number_input("Budget (€)", value=1000)
+        days = st.slider("Giorni", 30, 365, 90)
+        resa = st.slider("Resa %", 0.5, 5.0, 1.5)
         
-        with col_p1:
-            capitale = st.number_input("Capitale (€)", 100, 50000, 1000)
-            resa = st.slider("Resa Giornaliera Target (%)", 0.5, 5.0, 1.2)
-            giorni = st.number_input("Orizzonte (Giorni)", 30, 365, 90)
-            
-        with col_p2:
-            x = np.arange(giorni)
-            y = capitale * (1 + (resa/100))**x
-            fig = px.line(x=x, y=y, title="Proiezione Crescita Bankroll")
-            fig.update_traces(line_color='#1db954', line_width=4)
-            st.plotly_chart(fig, use_container_width=True)
-            st.metric("Capitale Finale Stimato", f"€ {y[-1]:,.2f}", f"+{((y[-1]/capitale)-1)*100:.1f}%")
+        x = np.arange(days)
+        y = cap * (1 + (resa/100))**x
+        fig = px.area(x=x, y=y, title="Interesse Composto")
+        fig.update_traces(line_color='#1db954')
+        st.plotly_chart(fig, use_container_width=True)
 
-    # --- MODULO 4: RISK SIMULATOR ---
     elif menu == "🛡️ Risk Simulator":
-        st.title("🛡️ Risk & Monte Carlo Simulator")
-        st.write("Simula 1000 iterazioni della tua strategia per vedere le probabilità di fallimento.")
-        
-        c_r1, c_r2 = st.columns(2)
-        with c_r1:
-            win_rate = st.slider("Win Rate Stimato (%)", 30, 80, 55)
-            quota_media = st.number_input("Quota Media", 1.2, 5.0, 1.90)
-        
-        # Simulazione Rapida
-        sim_results = [calculate_monte_carlo(win_rate/100, quota_media) for _ in range(100)]
-        
-        with c_r2:
-            st.write("### Esito Simulazione")
-            avg_win = np.mean(sim_results)
-            st.write(f"Probabilità di profitto nel lungo periodo: **{avg_win*100:.1f}%**")
-            if avg_win > 0.5:
-                st.success("Strategia Matematica Vincente (Edge Positivo)")
-            else:
-                st.error("Strategia ad Alto Rischio (Edge Negativo)")
+        st.title("🛡️ Risk Analysis")
+        wr = st.slider("Win Rate (%)", 30, 80, 55)
+        q = st.number_input("Quota Media", value=1.90)
+        res = calculate_monte_carlo(wr/100, q)
+        st.metric("Probabilità di Profitto (Monte Carlo)", f"{res*100:.2f}%")
 
-    # --- MODULO 5: IMPOSTAZIONI ---
     elif menu == "⚙️ Impostazioni":
-        st.title("⚙️ Configurazione Sistema")
-        st.checkbox("Notifiche Push Telegram (Beta)", value=True)
-        st.checkbox("Modalità Risparmio Dati API", value=True)
-        st.selectbox("Tema Interfaccia", ["Cyber Dark (Default)", "Deep Sea", "High Contrast"])
-        if st.button("Pulisci Cache"):
+        st.title("⚙️ Sistema")
+        if st.button("Reset Cache"):
             st.cache_data.clear()
-            st.success("Cache pulita!")
+            st.success("Cache svuotata!")
 
 # ==========================================
-# 6. FOOTER & COMPLIANCE
+# 6. FOOTER
 # ==========================================
-st.markdown("---")
-st.markdown("""
-    <div style='text-align: center; opacity: 0.5; font-size: 12px;'>
-        <b>AI BET MASTER v3.0 | 2026</b><br>
-        Il gioco è vietato ai minori e può causare dipendenza. Usa questi dati solo come supporto analitico.<br>
-        <i>"Il controllo è l'unica vera vincita."</i>
-    </div>
-""", unsafe_allow_html=True)
-
+st.markdown("<br><hr><center style='opacity:0.5'>AI BET MASTER PRO v3.0 | 2026</center>", unsafe_allow_html=True)
