@@ -4,4 +4,4 @@ pandas
 numpy
 supabase
 plotly
-python-dateutil
+scipy
