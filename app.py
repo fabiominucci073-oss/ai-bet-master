@@ -2,13 +2,18 @@ import streamlit as st
 import requests
 import pandas as pd
 import numpy as np
-from supabase import create_client, Client
+# Modifica qui per compatibilità Windows/Python 3.14
+try:
+    from supabase import create_client, Client
+except ImportError:
+    from supabase_py import create_client
+    # Definiamo Client come alias se non esiste in supabase_py
+    Client = any 
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 import plotly.express as px
 import time
 import random
-
 # ==========================================
 # 1. CONFIGURAZIONI CORE & SECURITY
 # ==========================================
@@ -287,3 +292,4 @@ st.markdown("""
         <i>"Il controllo è l'unica vera vincita."</i>
     </div>
 """, unsafe_allow_html=True)
+
